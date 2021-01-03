@@ -12,30 +12,20 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  // This widget is the root of your application.
-
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  GlobalKey SingleChildScrollViewVertical = GlobalKey();
-  GlobalKey _ContainerVertical = GlobalKey();
+  GlobalKey _SingleChildScrollViewVertical = GlobalKey();
+  ScrollController _SingleChildScrollViewVerticalscrollController = ScrollController();
 
   List<ItemBox> listItemBox = new List<ItemBox>();
-  ScrollController _scrollController = ScrollController();
   String BoxSel = '';
-  double sizeApp = 0;
   int indexBox = 0;
 
-  double utilGetHeigth(GlobalKey _globalKey) {
-    final RenderBox cardBox = _globalKey.currentContext.findRenderObject();
-    final size = cardBox.size;
-
-    return size.height;
-  }
-
   Offset utilGetPositionLocalY(GlobalKey _globalKey, Offset offset) {
+    //Retorna a Coordenada Y de um Wideget
     final RenderBox cardBox = _globalKey.currentContext.findRenderObject();
     final positionrenderscrollProdutos = cardBox.globalToLocal(offset);
 
@@ -44,32 +34,31 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    // TODO: implement initState
-
     addList();
     super.initState();
 
-    _scrollController.addListener(() async {
-      // Rotina de sincronização dos SingleChildScrollView Vertical e Horizontal
-      // Esta rotina é disparada toda vez que o SingleChildScrollViewVertical é movimentado.
+    _SingleChildScrollViewVerticalscrollController.addListener(() async {
+      //*** Rotina de sincronização dos SingleChildScrollView Vertical e Horizontal
+      //*** Esta rotina é disparada toda vez que o SingleChildScrollViewVertical é movimentado.
 
       BoxSel = '';
 
-      final RenderBox renderscrollProdutos = SingleChildScrollViewVertical.currentContext.findRenderObject();
+      final RenderBox renderscrollProdutos = _SingleChildScrollViewVertical.currentContext.findRenderObject();
       final positionrenderscrollProdutos = renderscrollProdutos.localToGlobal(Offset.zero);
 
-      //temp - gerando valores posision de cada box...
+      //Gerando valores position de cada box...
       for (var i = 0; i < listItemBox.length; ++i) {
         ItemBox item = listItemBox[i];
-        final positionCard = utilGetPositionLocalY(item.globalKeyVertical, positionrenderscrollProdutos);
+        final positionCard = utilGetPositionLocalY(item.SingleChildScrollViewVertical, positionrenderscrollProdutos);
         BoxSel = BoxSel + item.nome + ': ' + positionCard.dy.truncate().toString() + ' - ';
       }
 
-      //Gerando o index atual....
+      //Gerando o index atual(index da Box que está na parte superior do
+      // SingleChildScrollViewVertical, ou seja a box que "está selecionada"....
       int index = 0;
 
       for (var i = 0; i < listItemBox.length - 1; ++i) {
-        final RenderBox cardBox = listItemBox[i].globalKeyVertical.currentContext.findRenderObject();
+        final RenderBox cardBox = listItemBox[i].SingleChildScrollViewVertical.currentContext.findRenderObject();
         final positionCard = cardBox.globalToLocal(positionrenderscrollProdutos);
         final size = cardBox.size;
 
@@ -81,11 +70,15 @@ class _MyAppState extends State<MyApp> {
       await setState(() {
         indexBox = index;
       });
-      Scrollable.ensureVisible(listItemBox[indexBox].globalKeyHorizontal.currentContext, duration: Duration(milliseconds: 200));
+
+      //Sincronizando o SingleChildScrollViewHorizontal de acordo com o indexBox (De acordo com a "Box Selecionada"
+      Scrollable.ensureVisible(listItemBox[indexBox].SingleChildScrollViewHorizontal.currentContext,
+          duration: Duration(milliseconds: 200), alignment: 0.5);
     });
   }
 
   addList() {
+    //*** Rotina para Alimentar o list com as caixas que serão exibidas
     listItemBox = new List<ItemBox>();
 
     add(String _nome, double _height) {
@@ -113,49 +106,56 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ScrollView();
-  }
-
-  ScrollView() {
-    return new Scaffold(
+    return Scaffold(
       primary: true,
       appBar: new AppBar(
-        title: GestureDetector(onTap: addList(), child: Text('Home')),
+        title: Column(
+          children: [
+            Text('SingleChildScrollView Vertical/Horizontal integrado', style: TextStyle(fontSize: 16)),
+            Text('Git: @MateusONunes', style: TextStyle(fontSize: 18)),
+          ],
+        ),
       ),
       body: Column(
         children: [
           Container(
             height: 50,
             child: SingleChildScrollView(
+                //** SingleChildScrollView Que fica na horizontal na paret superior do App.
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     for (var i = 0; i < listItemBox.length; ++i)
                       GestureDetector(
                           onTap: () async {
-                            await Scrollable.ensureVisible(listItemBox[i].globalKeyVertical.currentContext,
-                                duration: Duration(milliseconds: 500));
-                            _scrollController.notifyListeners();
+                            await Scrollable.ensureVisible(listItemBox[i].SingleChildScrollViewVertical.currentContext,
+                                duration: Duration(milliseconds: 500), alignment: 0.01);
+
+                            _SingleChildScrollViewVerticalscrollController.notifyListeners();
                           },
-                          child: box(listItemBox[i].nome, 40,
-                              globalKey: listItemBox[i].globalKeyHorizontal, width: 100, cor: (i == indexBox) ? Colors.cyan : Colors.white))
+                          child: SizedBox(
+                              key: listItemBox[i].SingleChildScrollViewHorizontal,
+                              height: 40,
+                              width: 100,
+                              child: new Card(
+                                  color: (i == indexBox) ? Colors.cyan : Colors.white, child: Center(child: Text(listItemBox[i].nome)))))
                   ],
                 )),
           ),
           Text(BoxSel),
           Container(
-            key: _ContainerVertical,
-            // width: double.infinity,
-            // height: 200,
             child: Expanded(
               child: SingleChildScrollView(
-                  key: SingleChildScrollViewVertical,
-                  // scrollDirection: Axis.vertical,
-                  controller: _scrollController,
+                  key: _SingleChildScrollViewVertical,
+                  controller: _SingleChildScrollViewVerticalscrollController,
                   child: Column(
                     children: [
-                      for (var i = 0; i < listItemBox.length; ++i)
-                        box(listItemBox[i].nome, listItemBox[i]._height, globalKey: listItemBox[i].globalKeyVertical),
+                      for (var _itemBox in listItemBox)
+                        SizedBox(
+                            key: _itemBox.SingleChildScrollViewVertical,
+                            height: _itemBox._height,
+                            child: new Card(child: Center(child: Text(_itemBox.nome)))),
+
                       Padding(
                         padding: EdgeInsets.only(top: MediaQuery.of(context).size.height / 1.5),
                       )
@@ -168,10 +168,6 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
-
-  box(String title, double _height, {GlobalKey globalKey, double width = double.infinity, Color cor = Colors.white}) {
-    return SizedBox(key: globalKey, height: _height, width: width, child: new Card(color: cor, child: Center(child: Text(title))));
-  }
 }
 
 class ItemBox {
@@ -179,6 +175,6 @@ class ItemBox {
   double _height = 0;
   double bottomPadding = 0;
 
-  GlobalKey globalKeyHorizontal = GlobalKey();
-  GlobalKey globalKeyVertical = GlobalKey();
+  GlobalKey SingleChildScrollViewHorizontal = GlobalKey();
+  GlobalKey SingleChildScrollViewVertical = GlobalKey();
 }
