@@ -19,7 +19,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  GlobalKey globalkeyProdutos = GlobalKey();
+  GlobalKey SingleChildScrollViewVertical = GlobalKey();
   GlobalKey _ContainerVertical = GlobalKey();
 
   List<ItemBox> listItemBox = new List<ItemBox>();
@@ -27,7 +27,6 @@ class _MyAppState extends State<MyApp> {
   String BoxSel = '';
   double sizeApp = 0;
   int indexBox = 0;
-  bool processandoAnimacao = false;
 
   double utilGetHeigth(GlobalKey _globalKey) {
     final RenderBox cardBox = _globalKey.currentContext.findRenderObject();
@@ -51,42 +50,38 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     _scrollController.addListener(() async {
-      if (!processandoAnimacao) {
-        processandoAnimacao = true;
-        try {
-          BoxSel = '';
+      // Rotina de sincronização dos SingleChildScrollView Vertical e Horizontal
+      // Esta rotina é disparada toda vez que o SingleChildScrollViewVertical é movimentado.
 
-          final RenderBox renderscrollProdutos = globalkeyProdutos.currentContext.findRenderObject();
-          final positionrenderscrollProdutos = renderscrollProdutos.localToGlobal(Offset.zero);
+      BoxSel = '';
 
-          //temp - gerando valores posision de cada box...
-          for (var i = 0; i < listItemBox.length; ++i) {
-            ItemBox item = listItemBox[i];
-            final positionCard = utilGetPositionLocalY(item.globalKeyVertical, positionrenderscrollProdutos);
-            BoxSel = BoxSel + item.nome + ': ' + positionCard.dy.truncate().toString() + ' - ';
-          }
+      final RenderBox renderscrollProdutos = SingleChildScrollViewVertical.currentContext.findRenderObject();
+      final positionrenderscrollProdutos = renderscrollProdutos.localToGlobal(Offset.zero);
 
-          //Gerando o index atual....
-          int index = 0;
-
-          for (var i = 0; i < listItemBox.length; ++i) {
-            final RenderBox cardBox = listItemBox[i].globalKeyVertical.currentContext.findRenderObject();
-            final positionCard = cardBox.globalToLocal(positionrenderscrollProdutos);
-            final size = cardBox.size;
-
-            if (positionCard.dy - (size.height / 2) <= 0) break;
-
-            index++;
-          }
-
-          await setState(() {
-            indexBox = index;
-          });
-          Scrollable.ensureVisible(listItemBox[indexBox].globalKeyHorizontal.currentContext, duration: Duration(milliseconds: 200));
-        } finally {
-          processandoAnimacao = false;
-        }
+      //temp - gerando valores posision de cada box...
+      for (var i = 0; i < listItemBox.length; ++i) {
+        ItemBox item = listItemBox[i];
+        final positionCard = utilGetPositionLocalY(item.globalKeyVertical, positionrenderscrollProdutos);
+        BoxSel = BoxSel + item.nome + ': ' + positionCard.dy.truncate().toString() + ' - ';
       }
+
+      //Gerando o index atual....
+      int index = 0;
+
+      for (var i = 0; i < listItemBox.length - 1; ++i) {
+        final RenderBox cardBox = listItemBox[i].globalKeyVertical.currentContext.findRenderObject();
+        final positionCard = cardBox.globalToLocal(positionrenderscrollProdutos);
+        final size = cardBox.size;
+
+        if (positionCard.dy - (size.height / 2) <= 0) break;
+
+        index++;
+      }
+
+      await setState(() {
+        indexBox = index;
+      });
+      Scrollable.ensureVisible(listItemBox[indexBox].globalKeyHorizontal.currentContext, duration: Duration(milliseconds: 200));
     });
   }
 
@@ -138,20 +133,12 @@ class _MyAppState extends State<MyApp> {
                     for (var i = 0; i < listItemBox.length; ++i)
                       GestureDetector(
                           onTap: () async {
-                            processandoAnimacao = true;
-                            try {
-                              await Scrollable.ensureVisible(listItemBox[i].globalKeyVertical.currentContext,
-                                  duration: Duration(milliseconds: 300));
-                            } finally {
-                              processandoAnimacao = false;
-                            }
-
+                            await Scrollable.ensureVisible(listItemBox[i].globalKeyVertical.currentContext,
+                                duration: Duration(milliseconds: 500));
                             _scrollController.notifyListeners();
                           },
                           child: box(listItemBox[i].nome, 40,
-                              globalKey: listItemBox[i].globalKeyHorizontal,
-                              width: 100,
-                              cor: (i == indexBox) ? Colors.cyan : Colors.white))
+                              globalKey: listItemBox[i].globalKeyHorizontal, width: 100, cor: (i == indexBox) ? Colors.cyan : Colors.white))
                   ],
                 )),
           ),
@@ -162,7 +149,7 @@ class _MyAppState extends State<MyApp> {
             // height: 200,
             child: Expanded(
               child: SingleChildScrollView(
-                  key: globalkeyProdutos,
+                  key: SingleChildScrollViewVertical,
                   // scrollDirection: Axis.vertical,
                   controller: _scrollController,
                   child: Column(
@@ -179,7 +166,6 @@ class _MyAppState extends State<MyApp> {
           ),
         ],
       ),
-
     );
   }
 
