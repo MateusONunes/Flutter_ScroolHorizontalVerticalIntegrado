@@ -22,7 +22,7 @@ class _MyAppState extends State<MyApp> {
 
   List<ItemBox> listItemBox = new List<ItemBox>();
   String BoxSel = '';
-  int indexBox = 0;
+  int indexBox = 0; // Esta variável controla "Qual a Box está selecionada"
 
   Offset utilGetPositionLocalY(GlobalKey _globalKey, Offset offset) {
     //Retorna a Coordenada Y de um Wideget
@@ -40,16 +40,18 @@ class _MyAppState extends State<MyApp> {
     _SingleChildScrollViewVerticalscrollController.addListener(() async {
       //*** Rotina de sincronização dos SingleChildScrollView Vertical e Horizontal
       //*** Esta rotina é disparada toda vez que o SingleChildScrollViewVertical é movimentado.
-
+      // O PRINCIPAL OBJETIVO desta rotina é definir um valor para a variável global indexBox, ou seja
+      // Definir qual a box está selecionada, e para isto ela vai identificar qual a Box
+      // está visualmente NO COMEÇO (NA PARTE SUPERIOR) DO _SingleChildScrollViewVertical
       BoxSel = '';
 
-      final RenderBox renderscrollProdutos = _SingleChildScrollViewVertical.currentContext.findRenderObject();
-      final positionrenderscrollProdutos = renderscrollProdutos.localToGlobal(Offset.zero);
+      final RenderBox renderscrollVertical = _SingleChildScrollViewVertical.currentContext.findRenderObject();
+      final positionrenderscrollVertical = renderscrollVertical.localToGlobal(Offset.zero);
 
       //Gerando valores position de cada box...
       for (var i = 0; i < listItemBox.length; ++i) {
         ItemBox item = listItemBox[i];
-        final positionCard = utilGetPositionLocalY(item.SingleChildScrollViewVertical, positionrenderscrollProdutos);
+        final positionCard = utilGetPositionLocalY(item.Card_SingleChildScrollViewVertical, positionrenderscrollVertical);
         BoxSel = BoxSel + item.nome + ': ' + positionCard.dy.truncate().toString() + ' - ';
       }
 
@@ -57,22 +59,29 @@ class _MyAppState extends State<MyApp> {
       // SingleChildScrollViewVertical, ou seja a box que "está selecionada"....
       int index = 0;
 
-      for (var i = 0; i < listItemBox.length - 1; ++i) {
-        final RenderBox cardBox = listItemBox[i].SingleChildScrollViewVertical.currentContext.findRenderObject();
-        final positionCard = cardBox.globalToLocal(positionrenderscrollProdutos);
+      for (var i = 0; i < listItemBox.length; ++i) {
+        //Este loop é o principal desta rotina. Basicamente ele vai parar no primeiro card que está no
+        // comecinho(Visualmente falando) do size_SingleChildScrollViewVertical definindo assim o valor que será atribuído
+        // para a variável _indexCategoriaSelecionada
+
+        final RenderBox cardBox = listItemBox[i].Card_SingleChildScrollViewVertical.currentContext.findRenderObject();
+        final positionCard = cardBox.globalToLocal(positionrenderscrollVertical);
         final size = cardBox.size;
 
-        if (positionCard.dy - (size.height / 2) <= 0) break;
+        // O Primeiro card que eu encontrar que possuir o .dy Maior que zero é o "Card mais próximo da parte superiora do _SingleChildScrollViewVertical
+        if (positionCard.dy <= 0) break;
 
         index++;
       }
+
+      if (index > 0) index--;
 
       await setState(() {
         indexBox = index;
       });
 
       //Sincronizando o SingleChildScrollViewHorizontal de acordo com o indexBox (De acordo com a "Box Selecionada"
-      Scrollable.ensureVisible(listItemBox[indexBox].SingleChildScrollViewHorizontal.currentContext,
+      Scrollable.ensureVisible(listItemBox[indexBox].Card_SingleChildScrollViewHorizontal.currentContext,
           duration: Duration(milliseconds: 200), alignment: 0.5);
     });
   }
@@ -128,13 +137,13 @@ class _MyAppState extends State<MyApp> {
                     for (var i = 0; i < listItemBox.length; ++i)
                       GestureDetector(
                           onTap: () async {
-                            await Scrollable.ensureVisible(listItemBox[i].SingleChildScrollViewVertical.currentContext,
+                            await Scrollable.ensureVisible(listItemBox[i].Card_SingleChildScrollViewVertical.currentContext,
                                 duration: Duration(milliseconds: 500), alignment: 0.01);
 
                             _SingleChildScrollViewVerticalscrollController.notifyListeners();
                           },
                           child: SizedBox(
-                              key: listItemBox[i].SingleChildScrollViewHorizontal,
+                              key: listItemBox[i].Card_SingleChildScrollViewHorizontal,
                               height: 40,
                               width: 100,
                               child: new Card(
@@ -152,7 +161,7 @@ class _MyAppState extends State<MyApp> {
                     children: [
                       for (var _itemBox in listItemBox)
                         SizedBox(
-                            key: _itemBox.SingleChildScrollViewVertical,
+                            key: _itemBox.Card_SingleChildScrollViewVertical,
                             height: _itemBox._height,
                             child: new Card(child: Center(child: Text(_itemBox.nome)))),
 
@@ -175,6 +184,6 @@ class ItemBox {
   double _height = 0;
   double bottomPadding = 0;
 
-  GlobalKey SingleChildScrollViewHorizontal = GlobalKey();
-  GlobalKey SingleChildScrollViewVertical = GlobalKey();
+  GlobalKey Card_SingleChildScrollViewHorizontal = GlobalKey();
+  GlobalKey Card_SingleChildScrollViewVertical = GlobalKey();
 }
